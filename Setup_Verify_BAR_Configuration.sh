@@ -97,12 +97,15 @@ echo "Please login to viewpoint and click the JMS messages Checkbox and update s
 read -p "Press Enter once you update the system:... " -n1 -s
 
 echo "*************************************************************************************************************************"
-echo "Stopping and Restarting DSMAIN service in background process..."
+echo "Stopping and Restarting DSMAIN service in a background process..."
 sleep 5
 printf "start bardsmain -s\nstart bardsmain\n" | sudo cnsterm 6 &
-sleep 8
-#kill the background process.
+sleep 10
 
+echo "*************************************************************************************************************************"
+echo "Killing the background process used to stop and restart DSMAIN ..."
+for proc in $(pgrep cnsterm); do sudo kill -INT $proc; done
+sleep 3
 
 echo "*************************************************************************************************************************"
 echo "Please activate the system at Viewpoint portal----------"
