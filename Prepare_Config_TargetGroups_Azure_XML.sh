@@ -7,7 +7,7 @@ echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
 	<!-- 'target_group_name' - Required, max characters 30	-->
 	<target_group_name>${TargetGgroupName}</target_group_name>
 	<is_enabled>true</is_enabled>
-	<storage_account>${StoracgeAccount}</storage_account>
+	<storage_account>${StorageAccount}</storage_account>
 	<storage_type>cool</storage_type>">> Config_TargetGroups_Azure.xml
 
 i=${NumberOfNodes}

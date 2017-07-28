@@ -12,9 +12,7 @@ echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
 	<config_azure_blob_storage>
 		<!-- 'Storage account' - Required, max length 24, lower case -->
 		<storage_account>${StorageAccount}</storage_account>
-		<storage_type>cool</storage_type>
-			<blobs>
-				<!-- 'Blob container name' - Required, max length 63, lower case, at least one -->">>Config_Azure.xml
+		<storage_type>cool</storage_type>">>Config_Azure.xml
 
 i=${NumberOfNodes}
 for ((number=1;number <= i;number++))
@@ -22,13 +20,14 @@ for ((number=1;number <= i;number++))
 	BlobContainerName="${BloboContainerPrefix}"$number
 	PrefixName="${BlobPrefixNamePrefix}"$number
 
-echo "				<blob_container>${BlobContainerName}</blob_container>
-				<prefix_list>
-					<!-- 'Prefix name' - Required, max length 256, at least one -->
-					<prefix_name>${PrefixName}</prefix_name>
-					<storage_devices>${StorageDevices}</storage_devices>
-				</prefix_list>
-			</blobs>">>Config_Azure.xml
+echo "		<blobs>
+			<blob_container>${BlobContainerName}</blob_container>
+			<prefix_list>
+				<!-- 'Prefix name' - Required, max length 256, at least one -->
+				<prefix_name>${PrefixName}</prefix_name>
+				<storage_devices>${StorageDevices}</storage_devices>
+			</prefix_list>
+		</blobs>">>Config_Azure.xml
 }
 
 echo "	</config_azure_blob_storage>
