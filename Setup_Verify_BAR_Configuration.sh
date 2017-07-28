@@ -30,13 +30,13 @@ if [ -e Config_TargetGroups_Azure.xml ]; then
     sleep 2
 fi
 
-if [ -e RES_DB_TEST_DB.xml ]; then
-    rm RES_DB_TEST_DB.xml
+if [ -e ${RestoreJobName}.xml ]; then
+    rm ${RestoreJobName}.xml
     sleep 2
 fi
 
-if [ -e BKP_DB_TEST_DB.xml ]; then
-    rm BKP_DB_TEST_DB.xml
+if [ -e ${BackupJobName}.xml ]; then
+    rm ${BackupJobName}.xml
     sleep 2
 fi
 
@@ -86,6 +86,8 @@ echo "Applying Config_TargetGroups_Azure.xml ..."
 dsc config_target_groups -t TARGET_AZURE -f Config_TargetGroups_Azure.xml
 sleep 5
 
+echo "*************************************************************************************************************************"
+echo "Logging the systems settings into $HOME/logs/DSC_System_Config_log_$DATE and $HOME/logs/DSC_TG_Config_log_$DATE ..."
 dsc list_components -type SYSTEM > $HOME/logs/DSC_System_Config_log_$DATE
 dsc list_components -type TARGET_GROUP > $HOME/logs/DSC_TG_Config_log_$DATE
 echo "Teradata system and all nodes configuration completed---------- " >> $Log_File
@@ -95,10 +97,12 @@ echo "Please login to viewpoint and click the JMS messages Checkbox and update s
 read -p "Press Enter once you update the system:... " -n1 -s
 
 echo "*************************************************************************************************************************"
-echo "Stopping and Restarting DSMAIN service ..."
+echo "Stopping and Restarting DSMAIN service in background process..."
 sleep 5
-printf "start bardsmain -s\nstart bardsmain\n^C\n" | sudo cnsterm 6
-sleep 5
+printf "start bardsmain -s\nstart bardsmain\n" | sudo cnsterm 6 &
+sleep 8
+#kill the background process.
+
 
 echo "*************************************************************************************************************************"
 echo "Please activate the system at Viewpoint portal----------"
@@ -113,12 +117,12 @@ sleep 5
 echo "*************************************************************************************************************************"
 echo "Creating a backup job ..."
 sleep 5
-printf "dbc\n${DBCPassword}\n" | dsc create_job -f BKP_DB_TEST_DB.xml
+printf "dbc\n${DBCPassword}\n" | dsc create_job -f ${BackupJobName}.xml
 sleep 3
 
 echo "*************************************************************************************************************************"
 echo "Running the backup job ..."
-dsc run_job -n Bkp_DB_TEST_DB
+dsc run_job -n ${BackupJobName}
 
 echo "*************************************************************************************************************************"
 echo "Verifing the backup job (it takes for 5 minutes) ..."
@@ -128,7 +132,7 @@ BACKUP=0
 while [ ${RUN} -gt 0 ]
  do
    RUNNING=0
-   dsc job_status -n Bkp_DB_TEST_DB > $HOME/logs/Backup_Job_Log_$DATE
+   dsc job_status -n ${BackupJobName} > $HOME/logs/Backup_Job_Log_$DATE
    RUNNING=`grep RUNNING $HOME/logs/Backup_Job_Log_$DATE | wc -l`
    BACKUP=`grep COMPLETED_SUCCESSFULLY $HOME/logs/Backup_Job_Log_$DATE | wc -l`
 
@@ -151,14 +155,14 @@ sleep 3
 sh ./Drop_Table.sh
 
 echo "*************************************************************************************************************************"
-echo "Creating a Restore job (RES_DB_TEST_DB) ..."
+echo "Creating a Restore job (${RestoreJobName}) ..."
 sleep 5
-printf "dbc\n${DBCPassword}\n" | dsc create_job -f RES_DB_TEST_DB.xml
+printf "dbc\n${DBCPassword}\ny\n${DBCPassword}\n" | dsc create_job -f ${RestoreJobName}.xml
 sleep 3
 
 echo "*************************************************************************************************************************"
-echo "Running the Restore job (RES_DB_TEST_DB) ..."
-dsc run_job -n RES_DB_TEST_DB
+echo "Running the Restore job (${RestoreJobName}) ..."
+dsc run_job -n ${RestoreJobName}
 
 RUN_RESTORE=1
 RESTORE=0
@@ -166,7 +170,7 @@ RESTORE=0
 while [ ${RUN_RESTORE} -gt 0 ]
  do
    RUNNING_RESTORE=0
-   dsc job_status -n RES_DB_TEST_DB > $HOME/logs/Restore_Job_Log_$DATE
+   dsc job_status -n ${RestoreJobName} > $HOME/logs/Restore_Job_Log_$DATE
    RUNNING_RESTORE=`grep RUNNING $HOME/logs/Restore_Job_Log_$DATE | wc -l`
    RESTORE=`grep COMPLETED_SUCCESSFULLY $HOME/logs/Restore_Job_Log_$DATE | wc -l`
 

@@ -5,7 +5,7 @@ source parameters.sh
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
 <dscCreateJob xmlns=\"http://schemas.teradata.com/v2012/DSC\">
     <job_instance>
-        <job_name>Bkp_DB_TEST_DB</job_name>
+        <job_name>${BackupJobName}</job_name>
         <job_description>Taking backup of \"TEST_DB\" database</job_description>
         <job_type>BACKUP</job_type>
         <job_state>ACTIVE</job_state>
@@ -23,7 +23,7 @@ echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
         </objectlist>
     </job_instance>
     <source_tdpid>${SystemName}</source_tdpid>
-    <target_media>${TargetMedia}</target_media>
+    <target_media>${TargetGgroupName}</target_media>
     <job_options>
         <online>false</online>
         <data_phase>DATA</data_phase>
@@ -32,5 +32,5 @@ echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
         <nowait>true</nowait>
         <skip_archive>false</skip_archive>
     </job_options>
-</dscCreateJob>" >> BKP_DB_TEST_DB.xml
+</dscCreateJob>" >> ${BackupJobName}.xml
 
