@@ -58,6 +58,7 @@ sleep 3
 
 echo "XML file generated for Teradata system and all nodes configuration---------- " >> $Log_File
 
+echo "*************************************************************************************************************************"
 echo "Updating passwords in dsu-init ..."
 #Important: the path for dsu-init is subject to change!!!
 DSU_Init=/opt/teradata/client/15.11/dsa/commandline/dsu-init
@@ -91,37 +92,38 @@ echo "Teradata system and all nodes configuration completed---------- " >> $Log_
 
 echo "*************************************************************************************************************************"
 echo "Please login to viewpoint and click the JMS messages Checkbox and update system----------"
-read -p "Please press Enter once you update the system:... " -n1 -s
-echo "*************************************************************************************************************************"
+read -p "Press Enter once you update the system:... " -n1 -s
 
-echo "Stopping and Restarting DSMAIN service"
+echo "*************************************************************************************************************************"
+echo "Stopping and Restarting DSMAIN service ..."
 sleep 5
 printf "start bardsmain -s\nstart bardsmain\n^C\n" | sudo cnsterm 6
 sleep 5
 
+echo "*************************************************************************************************************************"
 echo "Please activate the system at Viewpoint portal----------"
-
-read -p "Please press Enter once you activate the system:... " -n1 -s
-
+read -p "Press Enter once you activate the system:... " -n1 -s
 
 echo "*************************************************************************************************************************"
-echo "Databse and tables for back up and restore is being created----------"
+echo "Creating Databse and tables to verify BAR configuration ..."
 sleep 5
 sh ./Create_Database_Tables.sh
 sleep 5
+
 echo "*************************************************************************************************************************"
-
-echo "Back up job is being created and executed----------"
-
+echo "Creating a backup job ..."
 sleep 5
-dsc create_job -f BKP_DB_TEST_DB.xml
+printf "dbc\n${DBCPassword}\n" | dsc create_job -f BKP_DB_TEST_DB.xml
 sleep 3
 
-dsc run_job -n Bkp_DB_TEST_DB 
+echo "*************************************************************************************************************************"
+echo "Running the backup job ..."
+dsc run_job -n Bkp_DB_TEST_DB
 
+echo "*************************************************************************************************************************"
+echo "Verifing the backup job (it takes for 5 minutes) ..."
 RUN=1
 BACKUP=0
-
 
 while [ ${RUN} -gt 0 ]
  do
@@ -135,26 +137,27 @@ while [ ${RUN} -gt 0 ]
                 RUN=0
                 echo "Backup Completed Successfully ---------- "
                 echo "Backup Completed Successfully ---------- " >> $Log_File
-	 elif [ ${BACKUP} -eq 0 ]&& [ ${RUNNING} -eq 0 ]
+      elif [ ${BACKUP} -eq 0 ]&& [ ${RUNNING} -eq 0 ]
                 then
-				RUN=0
-			    echo "ERR!!!Backup Job Failed,Please check the log ---------- " >> $Log_File	
+                RUN=0
+                echo "ERR!!!Backup Job Failed,Please check the log ---------- " >> $Log_File	
       fi
 
 done
 
 echo "*************************************************************************************************************************"
-echo "Teradata table is being deleted for restore testing----------"
+echo "Deleting DB_TEST_ for restore testing----------"
 sleep 3
 sh ./Drop_Table.sh
+
 echo "*************************************************************************************************************************"
-
-echo "Restore job is being created and executed----------"
-
+echo "Creating a Restore job (RES_DB_TEST_DB) ..."
 sleep 5
-dsc create_job -f RES_DB_TEST_DB.xml
+printf "dbc\n${DBCPassword}\n" | dsc create_job -f RES_DB_TEST_DB.xml
 sleep 3
 
+echo "*************************************************************************************************************************"
+echo "Running the Restore job (RES_DB_TEST_DB) ..."
 dsc run_job -n RES_DB_TEST_DB
 
 RUN_RESTORE=1
@@ -179,12 +182,10 @@ while [ ${RUN_RESTORE} -gt 0 ]
       fi
 
 done
-
 sleep 5
 
 echo "*************************************************************************************************************************"
-
-echo "Checking the tables after the restore job----------"
+echo "Verifing the backup job (it takes for 5 minutes) ..."
 
 #Comment out Check_Restore_Table.sh due to a product bug.
 #sh ./Check_Restore_Table.sh
@@ -204,4 +205,9 @@ fi
 
 sleep 5
 
+echo "*************************************************************************************************************************"
+echo "Verifing the backup job (it takes for 5 minutes) ..."
 sh ./Clear_Env.sh
+
+echo "*************************************************************************************************************************"
+echo "Congratulations! All looks good!"
