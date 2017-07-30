@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#exit the entire script for nonzero exit code
+#exit the entire script for any nonzero exit code
 set -e
 
 source parameters.sh
@@ -64,9 +64,15 @@ echo "XML file generated for Teradata system and all nodes configuration--------
 
 echo "*************************************************************************************************************************"
 echo "Updating passwords in dsu-init ..."
-DSU_Init=/opt/teradata/client/${DatabaseVersion}/dsa/commandline/dsu-init
-sudo sed -i -e "/DBC_DEF_PASS/ s/='[^'][^']*'/='${DBCPassword}'/" -e "/ADMIN_DEF_PASS/ s/='[^'][^']*'/='${DSCAdminPassword}'/" $DSU_Init
+DSU_Init=/opt/teradata/client/${DSUDatabaseVersion}/dsa/commandline/dsu-init
+sudo sed -i -e "/DBC_DEF_PASS/ s/='[^'][^']*'/='${DSUDBCPassword}'/" -e "/ADMIN_DEF_PASS/ s/='[^'][^']*'/='${DSUDSCAdminPassword}'/" $DSU_Init
 echo "Updated DBC_DEF_PASS and ADMIN_DEF_PASS settings for dsu-init ---------- " >> $Log_File
+
+echo "*************************************************************************************************************************"
+echo "Verifying logon DSU with dbc/dsumadmin credential ..."
+printf ".QUIT\n" | bteq .logon ${DSCSubNetAddress}/dbc,${DSUDBCPassword}
+printf ".QUIT\n" | bteq .logon ${DSCSubNetAddress}/dsuadmin,${DSUDSCAdminPassword}
+sleep 5
 
 echo "*************************************************************************************************************************"
 echo "Initializing dsu ..."
@@ -76,7 +82,7 @@ echo "Initialized dsu ---------- " >> $Log_File
 
 echo "*************************************************************************************************************************"
 echo "Applying Config_System.xml ..."
-printf "dbc\n${DBCPassword}\n" | dsc config_systems -f Config_System.xml
+printf "dbc\n${DSUDBCPassword}\n" | dsc config_systems -f Config_System.xml
 sleep 5
 
 echo "*************************************************************************************************************************"
@@ -123,7 +129,7 @@ sleep 5
 echo "*************************************************************************************************************************"
 echo "Creating a backup job ..."
 sleep 5
-printf "dbc\n${DBCPassword}\n" | dsc create_job -f ${BackupJobName}.xml
+printf "dbc\n${DSUDBCPassword}\n" | dsc create_job -f ${BackupJobName}.xml
 sleep 3
 
 echo "*************************************************************************************************************************"
@@ -136,23 +142,22 @@ RUN=1
 BACKUP=0
 
 while [ ${RUN} -gt 0 ]
- do
-   RUNNING=0
-   dsc job_status -n ${BackupJobName} > $HOME/logs/Backup_Job_Log_$DATE
-   RUNNING=`grep RUNNING $HOME/logs/Backup_Job_Log_$DATE | wc -l`
-   BACKUP=`grep COMPLETED_SUCCESSFULLY $HOME/logs/Backup_Job_Log_$DATE | wc -l`
+do
+    RUNNING=0
+    dsc job_status -n ${BackupJobName} > $HOME/logs/Backup_Job_Log_$DATE
+    RUNNING=`grep RUNNING $HOME/logs/Backup_Job_Log_$DATE | wc -l`
+    BACKUP=`grep COMPLETED_SUCCESSFULLY $HOME/logs/Backup_Job_Log_$DATE | wc -l`
 
-      if [ ${BACKUP} -gt 0 ]
-                then
-                RUN=0
-                echo "Backup Completed Successfully ---------- "
-                echo "Backup Completed Successfully ---------- " >> $Log_File
-      elif [ ${BACKUP} -eq 0 ]&& [ ${RUNNING} -eq 0 ]
-                then
-                RUN=0
-                echo "ERR!!!Backup Job Failed,Please check the log ---------- " >> $Log_File	
-      fi
-
+    if [ ${BACKUP} -gt 0 ]
+        then
+            RUN=0
+            echo "Backup Completed Successfully ---------- "
+            echo "Backup Completed Successfully ---------- " >> $Log_File
+    elif [ ${BACKUP} -eq 0 ]&& [ ${RUNNING} -eq 0 ]
+        then
+            RUN=0
+            echo "ERR!!!Backup Job Failed,Please check the log ---------- " >> $Log_File	
+    fi
 done
 
 echo "*************************************************************************************************************************"
@@ -163,7 +168,7 @@ sh ./Drop_Table.sh
 echo "*************************************************************************************************************************"
 echo "Creating a Restore job (${RestoreJobName}) ..."
 sleep 5
-printf "dbc\n${DBCPassword}\ny\n${DBCPassword}\n" | dsc create_job -f ${RestoreJobName}.xml
+printf "dbc\n${DSUDBCPassword}\ny\n${DSUDBCPassword}\n" | dsc create_job -f ${RestoreJobName}.xml
 sleep 3
 
 echo "*************************************************************************************************************************"
@@ -174,22 +179,22 @@ RUN_RESTORE=1
 RESTORE=0
 
 while [ ${RUN_RESTORE} -gt 0 ]
- do
-   RUNNING_RESTORE=0
-   dsc job_status -n ${RestoreJobName} > $HOME/logs/Restore_Job_Log_$DATE
-   RUNNING_RESTORE=`grep RUNNING $HOME/logs/Restore_Job_Log_$DATE | wc -l`
-   RESTORE=`grep COMPLETED_SUCCESSFULLY $HOME/logs/Restore_Job_Log_$DATE | wc -l`
+do
+    RUNNING_RESTORE=0
+    dsc job_status -n ${RestoreJobName} > $HOME/logs/Restore_Job_Log_$DATE
+    RUNNING_RESTORE=`grep RUNNING $HOME/logs/Restore_Job_Log_$DATE | wc -l`
+    RESTORE=`grep COMPLETED_SUCCESSFULLY $HOME/logs/Restore_Job_Log_$DATE | wc -l`
 
-      if [ ${RESTORE} -gt 0 ]
-                then
-                RUN_RESTORE=0
-                echo "Restore Completed Successfully ---------- "
+    if [ ${RESTORE} -gt 0 ]
+        then
+            RUN_RESTORE=0
+            echo "Restore Completed Successfully ---------- "
                 echo "Restore Completed Successfully ---------- " >> $Log_File
-         elif [ ${RESTORE} -eq 0 ]&& [ ${RUNNING_RESTORE} -eq 0 ]
-                then
-                                RUN_RESTORE=0
-                            echo "ERR!!!Restore Job Failed,Please check the log ---------- " >> $Log_File
-      fi
+    elif [ ${RESTORE} -eq 0 ]&& [ ${RUNNING_RESTORE} -eq 0 ]
+        then
+            RUN_RESTORE=0
+            echo "ERR!!!Restore Job Failed,Please check the log ---------- " >> $Log_File
+    fi
 
 done
 sleep 5
@@ -205,12 +210,12 @@ SUCCESS=0
 SUCCESS=`grep TEST_BACKUP_01 $HOME/logs/Teradata_Table_List_After_Restore_$DATE | wc -l`
 
 if [ ${SUCCESS} -gt 0 ]
-                then
-                echo "Restore Completed Successfully ---------- "
-                echo "Restore Completed Successfully ---------- " >> $Log_File
-         else
-               echo "ERR!!!Restore not Completed Successfully"		 
-               echo "ERR!!!Restore not Completed Successfully,Please check the log ---------- " >> $Log_File
+    then
+        echo "Restore Completed Successfully ---------- "
+        echo "Restore Completed Successfully ---------- " >> $Log_File
+else
+        echo "ERR!!!Restore not Completed Successfully"		 
+        echo "ERR!!!Restore not Completed Successfully,Please check the log ---------- " >> $Log_File
 fi
 
 sleep 5
