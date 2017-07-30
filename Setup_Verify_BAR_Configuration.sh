@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#exit the entire script for nonzero exit code
+set -e
+
 source parameters.sh
 
 Log_Path=$HOME/logs
@@ -40,6 +43,7 @@ if [ -e ${BackupJobName}.xml ]; then
     sleep 2
 fi
 
+echo "*************************************************************************************************************************"
 echo "Preparing XML files ..." 
 sh ./Prepare_Config_System_XML.sh
 sleep 3
@@ -60,8 +64,7 @@ echo "XML file generated for Teradata system and all nodes configuration--------
 
 echo "*************************************************************************************************************************"
 echo "Updating passwords in dsu-init ..."
-#Important: the path for dsu-init is subject to change!!!
-DSU_Init=/opt/teradata/client/15.11/dsa/commandline/dsu-init
+DSU_Init=/opt/teradata/client/${DatabaseVersion}/dsa/commandline/dsu-init
 sudo sed -i -e "/DBC_DEF_PASS/ s/='[^'][^']*'/='${DBCPassword}'/" -e "/ADMIN_DEF_PASS/ s/='[^'][^']*'/='${DSCAdminPassword}'/" $DSU_Init
 echo "Updated DBC_DEF_PASS and ADMIN_DEF_PASS settings for dsu-init ---------- " >> $Log_File
 
