@@ -69,14 +69,8 @@ sudo sed -i -e "/DBC_DEF_PASS/ s/='[^'][^']*'/='${DSUDBCPassword}'/" -e "/ADMIN_
 echo "Updated DBC_DEF_PASS and ADMIN_DEF_PASS settings for dsu-init ---------- " >> $Log_File
 
 echo "*************************************************************************************************************************"
-echo "Verifying logon DSU with dbc/dsumadmin credential ..."
-printf ".QUIT\n" | bteq .logon ${DSCSubNetAddress}/dbc,${DSUDBCPassword}
-printf ".QUIT\n" | bteq .logon ${DSCSubNetAddress}/dsuadmin,${DSUDSCAdminPassword}
-sleep 5
-
-echo "*************************************************************************************************************************"
 echo "Initializing dsu ..."
-printf "${ViewpointSubNetAddress}\ny" | sudo $DSU_Init
+printf "${ViewpointSubNetAddress}\ny" | sudo -i $DSU_Init
 sleep 5
 echo "Initialized dsu ---------- " >> $Log_File
 
@@ -189,7 +183,7 @@ do
         then
             RUN_RESTORE=0
             echo "Restore Completed Successfully ---------- "
-                echo "Restore Completed Successfully ---------- " >> $Log_File
+            echo "Restore Completed Successfully ---------- " >> $Log_File
     elif [ ${RESTORE} -eq 0 ]&& [ ${RUNNING_RESTORE} -eq 0 ]
         then
             RUN_RESTORE=0
